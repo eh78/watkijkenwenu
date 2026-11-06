@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { spin } from "@/app/actions/spin";
 import { Button } from "@/components/ui/Button";
 import { FilmReel } from "@/components/reel/FilmReel";
 import { DECADES, getDecade, getGenre, type DecadeId, type GenreId } from "@/lib/constants";
-import { savePool } from "@/lib/pool";
+import { consumeRespin, loadPool, savePool } from "@/lib/pool";
 import { posterUrl } from "@/lib/tmdb/images";
 import type { MovieSummary } from "@/lib/tmdb/types";
 import { DecadeDial } from "./DecadeDial";
@@ -27,11 +27,12 @@ export function SpinExperience() {
 
   const theme = getDecade(decadeId)?.theme ?? DECADES[0].theme;
 
-  function onSpin() {
-    if (!genreId) return;
-    setError(null);
+  function runSpin(decade: DecadeId, genre: GenreId) {
     startLoading(async () => {
-      const result = await spin(decadeId, genreId);
+      setError(null);
+      setDecadeId(decade);
+      setGenreId(genre);
+      const result = await spin(decade, genre);
       if (!result.ok) {
         setError(result.error);
         return;
@@ -42,10 +43,32 @@ export function SpinExperience() {
       router.prefetch(`/film/${result.winnerId}`);
       if (winner?.posterPath) new window.Image().src = posterUrl(winner.posterPath, "w780");
 
-      savePool({ decadeId, genreId, movies: result.pool, seen: [result.winnerId] });
+      savePool({ decadeId: decade, genreId: genre, movies: result.pool, seen: [result.winnerId] });
       setPhase({ name: "spinning", pool: result.pool, winnerId: result.winnerId });
     });
   }
+
+  function onSpin() {
+    if (genreId) runSpin(decadeId, genreId);
+  }
+
+  // Next.js bewaart deze pagina (verborgen) bij wegnavigeren. Zet de filmrol terug
+  // naar het keuzescherm zodra de pagina verborgen wordt, anders speelt bij
+  // terugkeer de vorige spin opnieuw af en komt dezelfde film eruit.
+  useLayoutEffect(() => {
+    return () => setPhase({ name: "pick" });
+  }, []);
+
+  // "Opnieuw draaien" op de resultaatpagina: direct een nieuwe spin met dezelfde keuze.
+  useEffect(() => {
+    if (!consumeRespin()) return;
+    const last = loadPool();
+    if (last && getDecade(last.decadeId) && getGenre(last.genreId)) {
+      runSpin(last.decadeId as DecadeId, last.genreId as GenreId);
+    }
+    // runSpin hoeft geen dependency te zijn: dit moet alleen bij (her)tonen draaien.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function onLanded(winner: MovieSummary) {
     router.push(`/film/${winner.id}`);

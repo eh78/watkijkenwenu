@@ -41,3 +41,25 @@ export function nextFromPool(currentId: number): MovieSummary | null {
   savePool({ ...pool, seen: [...seen] });
   return next;
 }
+
+const RESPIN_KEY = "wkwn:respin";
+
+/** Vraagt de startpagina om bij terugkeer direct opnieuw te draaien. */
+export function requestRespin() {
+  try {
+    sessionStorage.setItem(RESPIN_KEY, "1");
+  } catch {
+    /* zonder sessionStorage kiest de gebruiker gewoon zelf opnieuw */
+  }
+}
+
+/** Leest én wist het respin-verzoek (eenmalig). */
+export function consumeRespin(): boolean {
+  try {
+    const requested = sessionStorage.getItem(RESPIN_KEY) === "1";
+    sessionStorage.removeItem(RESPIN_KEY);
+    return requested;
+  } catch {
+    return false;
+  }
+}

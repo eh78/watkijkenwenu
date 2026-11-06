@@ -1,6 +1,6 @@
 "use client";
 
-import { ViewTransition, useEffect } from "react";
+import { ViewTransition, useEffect, useLayoutEffect } from "react";
 import { animate, motion, useMotionValue, useTransform, type PanInfo } from "motion/react";
 import { TmdbImage } from "@/components/ui/TmdbImage";
 import { useNextPick } from "./useNextPick";
@@ -20,6 +20,10 @@ export function SwipeablePoster({ id, title, posterPath }: Props) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-18, 18]);
   const opacity = useTransform(x, [-300, 0, 300], [0, 1, 0]);
+
+  // Ook deze pagina wordt door Next.js bewaard: zet de weggeswipete poster terug
+  // zodat hij bij terugkeren (bijv. met de terugknop) weer zichtbaar is.
+  useLayoutEffect(() => () => x.set(0), [x]);
 
   async function flyOut(direction: 1 | -1) {
     await animate(x, direction * 600, { duration: 0.25, ease: "easeIn" });
