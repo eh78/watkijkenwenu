@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Wat kijken we nu? (werktitel)
 
-## Getting Started
+Kies een decennium en een genre, laat de filmrol draaien en krijg een willekeurige film
+uit de **top 100 best beoordeelde** films van die combinatie (bron: TMDB).
 
-First, run the development server:
+## Starten
 
 ```bash
+cp .env.example .env.local   # vul TMDB_READ_TOKEN in (API Read Access Token, v4)
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind CSS v4 · Motion (Framer Motion) · TMDB API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Structuur
 
-## Learn More
+```
+src/
+├── app/
+│   ├── page.tsx              # home: decennium + genre → filmrol
+│   ├── actions/spin.ts       # Server Action: kiest pool + winnaar
+│   └── film/[id]/page.tsx    # resultaatpagina (deelbare URL, metadata/OG)
+├── components/
+│   ├── picker/               # DecadeDial, GenreSelector, SpinExperience
+│   ├── reel/                 # FilmReel (de animatie), PosterCard
+│   ├── movie/                # MovieHero, SwipeablePoster, PickActions
+│   └── ui/                   # Button, TmdbImage
+└── lib/
+    ├── constants.ts          # decennia, genres, selectie-instellingen
+    ├── pool.ts               # laatste spin in sessionStorage (voor swipen)
+    ├── theme.ts              # jaartal → decennium-thema
+    └── tmdb/                 # server-only client, gecachete queries, image-helpers, types
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Hoe de selectie werkt
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. `discover/movie` met `sort_by=vote_average.desc`, `vote_count.gte=500`, decennium, genre
+   en een minimumscore van 6,5 (`vote_average.gte`), zodat kleine genres geen flops opleveren.
+   Te weinig resultaten? Dan valt hij terug op `vote_count.gte=100`.
+2. Top 100 = 5 pagina's van 20 films. Er wordt één willekeurige pagina opgehaald, en daaruit
+   één winnaar. De andere posters vullen de filmrol en zijn "volgende" bij wegswipen.
+3. TMDB-responses worden een dag gecachet (`'use cache'` + `cacheLife('days')`).
+   Het willekeurig kiezen gebeurt na de cache.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+De TMDB-token wordt alleen op de server gebruikt (`server-only`).
 
-## Deploy on Vercel
+## Versie 2 (voorbereid)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Streamingdiensten NL**: `getWatchProviders()` in `src/lib/tmdb/movies.ts` is al klaar
+  (`/movie/{id}/watch/providers` → `results.NL`). Er moet nog een component komen op de
+  resultaatpagina (plek gemarkeerd in `MovieHero.tsx`). Bronvermelding van JustWatch is verplicht.
+- **Radarr**: komt in `src/lib/integrations/radarr.ts` (server-only) plus een route handler of
+  Server Action. Zet `RADARR_URL` en `RADARR_API_KEY` in `.env.local`.

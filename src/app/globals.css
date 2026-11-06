@@ -1,26 +1,156 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ------------------------------------------------------------------
+ * Thema's per decennium. Een element met data-theme="…" zet de
+ * variabelen; alle componenten gebruiken alleen de variabelen.
+ * ------------------------------------------------------------------ */
+:root,
+[data-theme="clean"] {
+  --bg: #0b0b0f;
+  --surface: #16161d;
+  --fg: #f4f4f5;
+  --muted: #a1a1aa;
+  --accent: #e4e4e7;
+  --accent-2: #71717a;
+  --glow: rgb(255 255 255 / 0.18);
+}
+
+[data-theme="seventies"] {
+  --bg: #1c120b;
+  --surface: #2a1b10;
+  --fg: #fbeedd;
+  --muted: #c9a98a;
+  --accent: #f29e38;
+  --accent-2: #c2492b;
+  --glow: rgb(242 158 56 / 0.35);
+}
+
+[data-theme="neon"] {
+  --bg: #0d0221;
+  --surface: #1a0b3b;
+  --fg: #fdf4ff;
+  --muted: #c4b5fd;
+  --accent: #ff2bd6;
+  --accent-2: #19e3ff;
+  --glow: rgb(255 43 214 / 0.45);
+}
+
+[data-theme="vhs"] {
+  --bg: #0a0e14;
+  --surface: #151b24;
+  --fg: #e8f0e8;
+  --muted: #8fa39a;
+  --accent: #3dff8f;
+  --accent-2: #ff3d5a;
+  --glow: rgb(61 255 143 / 0.3);
+}
+
+[data-theme="chrome"] {
+  --bg: #0c1220;
+  --surface: #182238;
+  --fg: #eef4ff;
+  --muted: #9fb3d1;
+  --accent: #7cc4ff;
+  --accent-2: #c9d6ea;
+  --glow: rgb(124 196 255 / 0.35);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-display);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Achtergrond van het thema. Kleuren overgangen vloeiend bij wisselen. */
+.theme-surface {
+  background: var(--bg);
+  color: var(--fg);
+  transition:
+    background-color 600ms ease,
+    color 600ms ease;
+  position: relative;
+  isolation: isolate;
+}
+
+.theme-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, var(--glow), transparent 70%);
+  transition: background 600ms ease;
+}
+
+/* '80: synthwave-raster aan de horizon */
+[data-theme="neon"].theme-surface::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 45%;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to top, rgb(255 43 214 / 0.35) 1px, transparent 1px),
+    linear-gradient(to right, rgb(255 43 214 / 0.35) 1px, transparent 1px);
+  background-size: 48px 48px;
+  transform: perspective(400px) rotateX(60deg);
+  transform-origin: bottom;
+  mask-image: linear-gradient(to top, black, transparent);
+}
+
+/* '90: VHS-scanlines */
+[data-theme="vhs"].theme-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 3px);
+}
+
+/* 35mm-perforatie boven en onder de filmrol */
+.sprockets {
+  --hole: rgb(255 255 255 / 0.85);
+  background-color: #050505;
+  background-image:
+    linear-gradient(to right, var(--hole) 0 14px, transparent 14px),
+    linear-gradient(to right, var(--hole) 0 14px, transparent 14px);
+  background-size: 28px 10px;
+  background-repeat: repeat-x;
+  background-position:
+    7px 9px,
+    7px calc(100% - 9px);
+}
+
+/* Shared-element morph van de winnende poster naar de resultaatpagina */
+::view-transition-group(.morph) {
+  animation-duration: 550ms;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+::view-transition-image-pair(.morph) {
+  animation-name: via-blur;
+}
+@keyframes via-blur {
+  30% {
+    filter: blur(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
