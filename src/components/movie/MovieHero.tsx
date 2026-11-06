@@ -1,10 +1,16 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import { SettingsLink } from "@/components/ui/SettingsLink";
 import { TmdbImage } from "@/components/ui/TmdbImage";
+import { tmdbMovieUrl } from "@/lib/tmdb/images";
 import { themeForYear } from "@/lib/theme";
 import type { MovieDetails } from "@/lib/tmdb/types";
+import { CastList } from "./CastList";
 import { MarkSeen } from "./MarkSeen";
 import { PickActions } from "./PickActions";
+import { RadarrButton } from "./RadarrButton";
 import { SwipeablePoster } from "./SwipeablePoster";
+import { WatchProviders, WatchProvidersSkeleton } from "./WatchProviders";
 
 const formatRuntime = (min: number) => `${Math.floor(min / 60)}u ${min % 60}m`;
 
@@ -19,9 +25,12 @@ export function MovieHero({ movie }: { movie: MovieDetails }) {
         >
           <span aria-hidden>←</span> Startscherm
         </Link>
-        <Link href="/" className="font-display text-2xl tracking-wide text-fg/80 hover:text-fg">
-          Wat kijken we nu?
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="hidden font-display text-2xl tracking-wide text-fg/80 hover:text-fg sm:block">
+            Wat kijken we nu?
+          </Link>
+          <SettingsLink />
+        </div>
       </nav>
       {movie.backdropPath && (
         <div aria-hidden className="absolute inset-0 -z-10">
@@ -30,10 +39,13 @@ export function MovieHero({ movie }: { movie: MovieDetails }) {
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-10 px-6 py-10 md:flex-row md:items-center">
-        <SwipeablePoster id={movie.id} title={movie.title} posterPath={movie.posterPath} />
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-10 px-6 py-10 md:flex-row md:items-start">
+        <div className="md:sticky md:top-10">
+          <SwipeablePoster id={movie.id} title={movie.title} posterPath={movie.posterPath} />
+          <p className="mt-3 hidden text-center text-xs text-muted md:block">Swipe de poster weg (of ← →) voor een andere film.</p>
+        </div>
 
-        <div className="flex flex-col gap-5 text-center md:text-left">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-6 text-center md:text-left">
           <div>
             <h1 className="font-display text-5xl leading-none tracking-wide sm:text-7xl">{movie.title}</h1>
             {movie.originalTitle !== movie.title && <p className="mt-1 text-muted">{movie.originalTitle}</p>}
@@ -53,10 +65,39 @@ export function MovieHero({ movie }: { movie: MovieDetails }) {
 
           {movie.overview && <p className="max-w-prose leading-relaxed text-fg/90">{movie.overview}</p>}
 
-          {/* v2: <WatchProviders id={movie.id} /> (streamen/huren/kopen in NL) en <AddToRadarr tmdbId={movie.id} /> */}
+          {movie.directors.length > 0 && (
+            <p className="text-sm">
+              <span className="text-muted">Regie: </span>
+              <span className="font-medium">{movie.directors.join(", ")}</span>
+            </p>
+          )}
 
-          <PickActions currentId={movie.id} />
-          <p className="text-xs text-muted">Tip: swipe de poster weg (of gebruik ← →) voor een andere film.</p>
+          <div className="text-left">
+            <CastList cast={movie.cast} />
+          </div>
+
+          <div className="text-left">
+            <Suspense fallback={<WatchProvidersSkeleton />}>
+              <WatchProviders id={movie.id} />
+            </Suspense>
+          </div>
+
+          <div className="flex flex-col items-center gap-4 md:items-start">
+            <PickActions currentId={movie.id} />
+            <RadarrButton tmdbId={movie.id} />
+          </div>
+
+          <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-muted md:justify-start">
+            <a href={tmdbMovieUrl(movie.id)} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:text-fg hover:underline">
+              Bekijk op TMDB ↗
+            </a>
+            {movie.imdbId && (
+              <a href={`https://www.imdb.com/title/${movie.imdbId}/`} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:text-fg hover:underline">
+                IMDb ↗
+              </a>
+            )}
+          </p>
+          <p className="text-xs text-muted md:hidden">Tip: swipe de poster weg voor een andere film.</p>
         </div>
       </div>
     </main>

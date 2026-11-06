@@ -8,7 +8,7 @@ import { useNextPick } from "./useNextPick";
 export function PickActions({ currentId }: { currentId: number }) {
   const goNext = useNextPick(currentId);
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap justify-center gap-3 md:justify-start">
       <Button onClick={goNext}>Andere film →</Button>
       <Link
         href="/"

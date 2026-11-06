@@ -11,6 +11,9 @@ import type {
   TmdbWatchProviders,
 } from "./types";
 
+/** Aantal hoofdrolspelers op de filmpagina. */
+const CAST_LIMIT = 8;
+
 const yearOf = (date: string) => (date ? Number(date.slice(0, 4)) : null);
 
 const toSummary = (m: TmdbDiscoverMovie): MovieSummary => ({
@@ -69,7 +72,10 @@ export async function getMovieDetails(id: number): Promise<MovieDetails | null> 
 
   let movie: TmdbMovieDetails;
   try {
-    movie = await tmdbFetch<TmdbMovieDetails>(`/movie/${id}`, { language: TMDB_LOCALE.language });
+    movie = await tmdbFetch<TmdbMovieDetails>(`/movie/${id}`, {
+      language: TMDB_LOCALE.language,
+      append_to_response: "credits",
+    });
   } catch (e) {
     if (e instanceof Error && "status" in e && e.status === 404) return null;
     throw e;
@@ -96,6 +102,11 @@ export async function getMovieDetails(id: number): Promise<MovieDetails | null> 
     runtime: movie.runtime,
     genres: movie.genres.map((g) => g.name),
     imdbId: movie.imdb_id,
+    directors: (movie.credits?.crew ?? []).filter((c) => c.job === "Director").map((c) => c.name),
+    cast: (movie.credits?.cast ?? [])
+      .sort((a, b) => a.order - b.order)
+      .slice(0, CAST_LIMIT)
+      .map((c) => ({ id: c.id, name: c.name, character: c.character, profilePath: c.profile_path })),
   };
 }
 

@@ -1,5 +1,6 @@
 /**
- * Films die de gebruiker deze browsersessie al gezien heeft (sessionStorage).
+ * Films die de gebruiker al gezien heeft (localStorage, blijft bewaard na
+ * sluiten van de browser tot de gebruiker op "Wissen" klikt).
  * Geldt over alle decennia en genres heen. Alleen client-side gebruiken;
  * voor weergave in React: `useSeenCount()` (hydration-veilig).
  */
@@ -14,7 +15,7 @@ let cache: { raw: string | null; ids: number[] } = { raw: null, ids: [] };
 
 export function getSeen(): number[] {
   try {
-    const raw = sessionStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY);
     if (raw !== cache.raw) cache = { raw, ids: raw ? (JSON.parse(raw) as number[]) : [] };
     return cache.ids;
   } catch {
@@ -24,7 +25,7 @@ export function getSeen(): number[] {
 
 function write(ids: number[]) {
   try {
-    sessionStorage.setItem(KEY, JSON.stringify(ids.slice(-MAX)));
+    localStorage.setItem(KEY, JSON.stringify(ids.slice(-MAX)));
   } catch {
     /* privémodus / quota: dan wordt er niets uitgesloten */
   }
@@ -41,8 +42,14 @@ export function clearSeen() {
 }
 
 function subscribe(onChange: () => void) {
+  // "storage" vuurt bij wijzigingen in andere tabbladen.
+  const onStorage = (e: StorageEvent) => e.key === KEY && onChange();
   window.addEventListener(EVENT, onChange);
-  return () => window.removeEventListener(EVENT, onChange);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    window.removeEventListener(EVENT, onChange);
+    window.removeEventListener("storage", onStorage);
+  };
 }
 
 export function useSeenCount() {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { spin } from "@/app/actions/spin";
 import { Button } from "@/components/ui/Button";
+import { SettingsLink } from "@/components/ui/SettingsLink";
 import { FilmReel } from "@/components/reel/FilmReel";
 import { DECADES, getDecade, getGenre, type DecadeId, type GenreId } from "@/lib/constants";
 import { consumeRespin, loadPool, savePool } from "@/lib/pool";
@@ -78,6 +79,7 @@ export function SpinExperience() {
 
   return (
     <main data-theme={theme} className="theme-surface flex flex-1 flex-col items-center justify-center gap-10 overflow-hidden px-4 py-12">
+      <SettingsLink className="absolute right-4 top-4 sm:right-6 sm:top-6" />
       <header className="text-center">
         <h1 className="font-display text-6xl tracking-wide text-fg drop-shadow-[0_0_24px_var(--glow)] sm:text-8xl">
           Wat kijken we nu?

@@ -33,6 +33,11 @@ export interface TmdbMovieDetails {
   vote_average: number;
   vote_count: number;
   imdb_id: string | null;
+  /** Aanwezig bij append_to_response=credits */
+  credits?: {
+    cast: { id: number; name: string; character: string; profile_path: string | null; order: number }[];
+    crew: { id: number; name: string; job: string }[];
+  };
 }
 
 /** v2: /movie/{id}/watch/providers → results.NL */
@@ -68,4 +73,13 @@ export interface MovieDetails extends MovieSummary {
   genres: string[];
   voteCount: number;
   imdbId: string | null;
+  directors: string[];
+  cast: CastMember[];
+}
+
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profilePath: string | null;
 }
