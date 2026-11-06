@@ -1,6 +1,6 @@
 "use server";
 
-import { SELECTION, getDecade, getGenre } from "@/lib/constants";
+import { SELECTION, getDecade, getGenre, sanitizeFilters, type ExclusionFilters } from "@/lib/constants";
 import { discoverTopRated } from "@/lib/tmdb/movies";
 import type { MovieSummary } from "@/lib/tmdb/types";
 
@@ -33,32 +33,42 @@ function shuffle<T>(items: T[]): T[] {
  * films van een decennium + genre. Geeft ook de rest van die pagina terug: die
  * posters vullen de filmrol-animatie en dienen als "volgende" bij wegswipen.
  */
-export async function spin(decadeId: string, genreId: number, excludeIds: number[] = []): Promise<SpinResult> {
+export async function spin(
+  decadeId: string,
+  genreId: number,
+  excludeIds: number[] = [],
+  rawFilters?: ExclusionFilters,
+): Promise<SpinResult> {
   if (!getDecade(decadeId) || !getGenre(genreId)) {
     return { ok: false, error: "Ongeldige keuze." };
   }
+  const filters = sanitizeFilters(rawFilters);
+  const hasFilters = filters.languages.length + filters.countries.length > 0;
+  const noResults = hasFilters
+    ? "Geen films gevonden met deze filters. Sluit minder talen of landen uit."
+    : "Geen films gevonden voor deze combinatie.";
   const seen = new Set(
     (Array.isArray(excludeIds) ? excludeIds : []).filter(Number.isInteger).slice(-MAX_EXCLUDE),
   );
 
   try {
     let minVotes: number = SELECTION.minVoteCount;
-    let first = await discoverTopRated(decadeId, genreId, 1, minVotes);
+    let first = await discoverTopRated(decadeId, genreId, 1, minVotes, filters);
 
     // Niche-combinaties (bijv. Western uit de jaren '20) hebben weinig films met veel stemmen.
     if (first.totalResults < 20) {
       minVotes = SELECTION.fallbackMinVoteCount;
-      first = await discoverTopRated(decadeId, genreId, 1, minVotes);
+      first = await discoverTopRated(decadeId, genreId, 1, minVotes, filters);
     }
 
     const pageCount = Math.min(SELECTION.maxPages, first.totalPages);
-    if (pageCount === 0) return { ok: false, error: "Geen films gevonden voor deze combinatie." };
+    if (pageCount === 0) return { ok: false, error: noResults };
 
     // Pagina's in willekeurige volgorde proberen tot er een ongeziene film tussen zit.
     // Alle pagina's zijn gecachet, dus extra pogingen zijn goedkoop.
     let fallbackPool: MovieSummary[] = [];
     for (const page of shuffle(Array.from({ length: pageCount }, (_, i) => i + 1))) {
-      const data = page === 1 ? first : await discoverTopRated(decadeId, genreId, page, minVotes);
+      const data = page === 1 ? first : await discoverTopRated(decadeId, genreId, page, minVotes, filters);
       if (data.movies.length === 0) continue;
       if (fallbackPool.length === 0) fallbackPool = data.movies;
 
@@ -68,7 +78,7 @@ export async function spin(decadeId: string, genreId: number, excludeIds: number
       }
     }
 
-    if (fallbackPool.length === 0) return { ok: false, error: "Geen films gevonden voor deze combinatie." };
+    if (fallbackPool.length === 0) return { ok: false, error: noResults };
     // Alles al gezien: kies toch, maar laat de UI weten dat het een herhaling kan zijn.
     const pool = shuffle(fallbackPool);
     return { ok: true, pool, winnerId: pick(pool).id, exhausted: true };

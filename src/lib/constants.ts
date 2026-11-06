@@ -51,3 +51,70 @@ export const SELECTION = {
 
 /** Taal en regio voor TMDB (regio NL wordt in v2 gebruikt voor watch providers). */
 export const TMDB_LOCALE = { language: "nl-NL", fallbackLanguage: "en-US", region: "NL" } as const;
+
+/** Talen die uitgesloten kunnen worden (ISO 639-1, zoals TMDB `original_language`). */
+export const LANGUAGES = [
+  { code: "en", label: "Engels" },
+  { code: "es", label: "Spaans" },
+  { code: "fr", label: "Frans" },
+  { code: "de", label: "Duits" },
+  { code: "it", label: "Italiaans" },
+  { code: "nl", label: "Nederlands" },
+  { code: "sv", label: "Zweeds" },
+  { code: "da", label: "Deens" },
+  { code: "no", label: "Noors" },
+  { code: "pt", label: "Portugees" },
+  { code: "ru", label: "Russisch" },
+  { code: "tr", label: "Turks" },
+  { code: "ja", label: "Japans" },
+  { code: "ko", label: "Koreaans" },
+  { code: "zh", label: "Chinees (Mandarijn)" },
+  { code: "cn", label: "Kantonees" },
+  { code: "hi", label: "Hindi" },
+  { code: "ta", label: "Tamil" },
+  { code: "te", label: "Telugu" },
+  { code: "th", label: "Thai" },
+] as const;
+
+/** Landen die uitgesloten kunnen worden (ISO 3166-1, zoals TMDB `origin_country`). */
+export const COUNTRIES = [
+  { code: "US", label: "Verenigde Staten" },
+  { code: "GB", label: "Verenigd Koninkrijk" },
+  { code: "CA", label: "Canada" },
+  { code: "AU", label: "Australië" },
+  { code: "FR", label: "Frankrijk" },
+  { code: "DE", label: "Duitsland" },
+  { code: "IT", label: "Italië" },
+  { code: "ES", label: "Spanje" },
+  { code: "NL", label: "Nederland" },
+  { code: "BE", label: "België" },
+  { code: "SE", label: "Zweden" },
+  { code: "DK", label: "Denemarken" },
+  { code: "NO", label: "Noorwegen" },
+  { code: "RU", label: "Rusland" },
+  { code: "TR", label: "Turkije" },
+  { code: "MX", label: "Mexico" },
+  { code: "BR", label: "Brazilië" },
+  { code: "AR", label: "Argentinië" },
+  { code: "JP", label: "Japan" },
+  { code: "KR", label: "Zuid-Korea" },
+  { code: "CN", label: "China" },
+  { code: "HK", label: "Hongkong" },
+  { code: "IN", label: "India" },
+  { code: "TH", label: "Thailand" },
+] as const;
+
+export interface ExclusionFilters {
+  languages: string[];
+  countries: string[];
+}
+
+export const NO_FILTERS: ExclusionFilters = { languages: [], countries: [] };
+
+/** Alleen bekende codes doorlaten, gesorteerd (stabiele cache-sleutel). */
+export function sanitizeFilters(input: unknown): ExclusionFilters {
+  const f = (input ?? {}) as Partial<ExclusionFilters>;
+  const pick = (values: unknown, allowed: readonly { code: string }[]) =>
+    (Array.isArray(values) ? values : []).filter((v): v is string => allowed.some((a) => a.code === v)).sort();
+  return { languages: pick(f.languages, LANGUAGES), countries: pick(f.countries, COUNTRIES) };
+}

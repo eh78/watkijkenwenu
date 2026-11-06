@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import { SELECTION, TMDB_LOCALE, getDecade } from "@/lib/constants";
+import { NO_FILTERS, SELECTION, TMDB_LOCALE, getDecade, type ExclusionFilters } from "@/lib/constants";
 import { tmdbFetch } from "./client";
 import type {
   MovieDetails,
@@ -12,7 +12,7 @@ import type {
 } from "./types";
 
 /** Aantal hoofdrolspelers op de filmpagina. */
-const CAST_LIMIT = 8;
+const CAST_LIMIT = 5;
 
 const yearOf = (date: string) => (date ? Number(date.slice(0, 4)) : null);
 
@@ -24,6 +24,31 @@ const toSummary = (m: TmdbDiscoverMovie): MovieSummary => ({
   rating: m.vote_average,
 });
 
+/** Alle taal- en landcodes die TMDB kent (verandert zelden). */
+async function getAllCodes() {
+  "use cache";
+  cacheLife("weeks");
+  const [languages, countries] = await Promise.all([
+    tmdbFetch<{ iso_639_1: string }[]>("/configuration/languages"),
+    tmdbFetch<{ iso_3166_1: string }[]>("/configuration/countries"),
+  ]);
+  return { languages: languages.map((l) => l.iso_639_1), countries: countries.map((c) => c.iso_3166_1) };
+}
+
+/**
+ * TMDB kan talen en landen niet uitsluiten, alleen insluiten (meerdere waarden met "|").
+ * Uitsluiten = alle andere codes insluiten.
+ */
+async function exclusionParams(filters: ExclusionFilters) {
+  if (filters.languages.length === 0 && filters.countries.length === 0) return {};
+  const all = await getAllCodes();
+  const complement = (codes: string[], exclude: string[]) => codes.filter((c) => !exclude.includes(c)).join("|");
+  return {
+    with_original_language: filters.languages.length ? complement(all.languages, filters.languages) : undefined,
+    with_origin_country: filters.countries.length ? complement(all.countries, filters.countries) : undefined,
+  };
+}
+
 /**
  * Eén pagina (20 films) uit de best beoordeelde films van een decennium + genre.
  * Gecachet per combinatie van argumenten; het willekeurig kiezen gebeurt
@@ -34,6 +59,7 @@ export async function discoverTopRated(
   genreId: number,
   page: number,
   minVoteCount: number = SELECTION.minVoteCount,
+  filters: ExclusionFilters = NO_FILTERS,
 ) {
   "use cache";
   cacheLife("days");
@@ -53,6 +79,7 @@ export async function discoverTopRated(
     include_adult: false,
     include_video: false,
     page,
+    ...(await exclusionParams(filters)),
   });
 
   return {

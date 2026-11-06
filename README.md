@@ -31,6 +31,7 @@ src/
 └── lib/
     ├── constants.ts          # decennia, genres, selectie-instellingen
     ├── pool.ts               # laatste spin in sessionStorage (voor swipen)
+    ├── filters.ts            # uitgesloten talen/landen (localStorage)
     ├── seen.ts               # al geziene films (localStorage, worden overgeslagen)
     ├── theme.ts              # jaartal → decennium-thema
     └── tmdb/                 # server-only client, gecachete queries, image-helpers, types
@@ -47,14 +48,17 @@ src/
    Zit er op een pagina niets nieuws meer tussen, dan probeert hij de andere pagina's. Is alles
    gezien, dan kiest hij toch een film en meldt dat het een herhaling kan zijn. Op het startscherm
    kun je de lijst wissen.
-4. TMDB-responses worden een dag gecachet (`'use cache'` + `cacheLife('days')`).
+4. **Talen en landen uitsluiten** (startscherm, bewaard in localStorage). TMDB kan niet uitsluiten,
+   alleen insluiten, dus de app stuurt alle *andere* taal- en landcodes mee (`with_original_language`,
+   `with_origin_country`, lijsten uit `/configuration`). Zo blijft het een echte top 100.
+5. TMDB-responses worden een dag gecachet (`'use cache'` + `cacheLife('days')`).
    Het willekeurig kiezen gebeurt na de cache.
 
 De TMDB-token wordt alleen op de server gebruikt (`server-only`).
 
 ## Filmpagina
 
-Poster, titel, jaar, speelduur, score, genres, beschrijving, regisseur, de acht belangrijkste
+Poster, titel, jaar, speelduur, score, genres, beschrijving, regisseur, de vijf belangrijkste
 acteurs (één TMDB-call via `append_to_response=credits`), links naar TMDB en IMDb, en:
 
 - **Waar te zien in Nederland:** streamen, huren en kopen (`/movie/{id}/watch/providers` → `NL`,

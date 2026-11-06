@@ -46,12 +46,17 @@ export function FilmReel({ pool, winnerId, onLanded }: Props) {
   const blurPx = useTransform(velocity, [-9000, 0, 9000], [5, 0, 5], { clamp: true });
   const filter = useMotionTemplate`blur(${blurPx}px)`;
 
+  const n = pool.length;
   const winnerIndex = Math.max(0, pool.findIndex((m) => m.id === winnerId));
-  const laps = Math.max(3, Math.ceil(MIN_CARDS / pool.length));
-  const targetIndex = (laps - 1) * pool.length + winnerIndex;
+  const laps = Math.max(3, Math.ceil(MIN_CARDS / n));
+  // Extra kaarten vóór en na de rondes, zodat de strip links en rechts altijd
+  // gevuld is: de lijst loopt naadloos door (na de laatste film weer de eerste).
+  const [pad] = useState(() => Math.ceil((typeof window !== "undefined" ? window.innerWidth : 1920) / (cardWidth + GAP) / 2) + 2);
+  const startIndex = pad;
+  const targetIndex = pad + (laps - 1) * n + winnerIndex;
   const strip = useMemo(
-    () => Array.from({ length: laps * pool.length }, (_, i) => pool[i % pool.length]),
-    [laps, pool],
+    () => Array.from({ length: pad + laps * n + pad }, (_, i) => pool[(((i - pad) % n) + n) % n]),
+    [pad, laps, n, pool],
   );
 
   // De spin zelf.
@@ -61,7 +66,7 @@ export function FilmReel({ pool, winnerId, onLanded }: Props) {
 
     const step = cardWidth + GAP;
     const center = viewport.clientWidth / 2 - cardWidth / 2;
-    const start = center;
+    const start = center - startIndex * step;
     const target = center - targetIndex * step;
     const overshoot = step * 0.35;
 
@@ -90,7 +95,7 @@ export function FilmReel({ pool, winnerId, onLanded }: Props) {
     };
     // onLanded bewust niet als dependency: de spin mag niet herstarten bij een re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardWidth, targetIndex, reduceMotion, x]);
+  }, [cardWidth, startIndex, targetIndex, reduceMotion, x]);
 
   return (
     <div className="relative w-full">

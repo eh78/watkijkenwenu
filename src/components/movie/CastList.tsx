@@ -15,10 +15,10 @@ export function CastList({ cast }: { cast: CastMember[] }) {
       <h2 id="cast-heading" className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
         Hoofdrollen
       </h2>
-      <ul className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
+      <ul className="grid grid-cols-5 gap-2 sm:gap-3">
         {cast.map((c) => (
-          <li key={c.id} className="w-20 shrink-0 snap-start text-center">
-            <div className="relative mx-auto size-16 overflow-hidden rounded-full bg-surface ring-1 ring-muted/20">
+          <li key={c.id} className="min-w-0 text-center">
+            <div className="relative mx-auto size-12 overflow-hidden sm:size-16 rounded-full bg-surface ring-1 ring-muted/20">
               {c.profilePath ? (
                 <TmdbImage path={c.profilePath} kind="profile" alt="" fill sizes="64px" className="object-cover" />
               ) : (

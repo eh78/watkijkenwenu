@@ -9,10 +9,12 @@ import { SettingsLink } from "@/components/ui/SettingsLink";
 import { FilmReel } from "@/components/reel/FilmReel";
 import { DECADES, getDecade, getGenre, type DecadeId, type GenreId } from "@/lib/constants";
 import { consumeRespin, loadPool, savePool } from "@/lib/pool";
+import { getFilters } from "@/lib/filters";
 import { clearSeen, getSeen, useSeenCount } from "@/lib/seen";
 import { posterUrl } from "@/lib/tmdb/images";
 import type { MovieSummary } from "@/lib/tmdb/types";
 import { DecadeDial } from "./DecadeDial";
+import { FilterPanel } from "./FilterPanel";
 import { GenreSelector } from "./GenreSelector";
 
 type Phase =
@@ -35,7 +37,7 @@ export function SpinExperience() {
       setError(null);
       setDecadeId(decade);
       setGenreId(genre);
-      const result = await spin(decade, genre, getSeen());
+      const result = await spin(decade, genre, getSeen(), getFilters());
       if (!result.ok) {
         setError(result.error);
         return;
@@ -104,6 +106,7 @@ export function SpinExperience() {
           >
             <DecadeDial value={decadeId} onChange={setDecadeId} />
             <GenreSelector value={genreId} onChange={setGenreId} />
+            <FilterPanel />
             <Button onClick={onSpin} disabled={!genreId || loading} aria-busy={loading}>
               {loading ? "Filmrol laden…" : "Draai de filmrol"}
             </Button>
