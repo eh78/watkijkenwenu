@@ -1,3 +1,4 @@
+import { getSeen } from "@/lib/seen";
 import type { MovieSummary } from "@/lib/tmdb/types";
 
 /**
@@ -11,7 +12,6 @@ export interface StoredPool {
   decadeId: string;
   genreId: number;
   movies: MovieSummary[];
-  seen: number[];
 }
 
 export function savePool(pool: StoredPool) {
@@ -31,15 +31,12 @@ export function loadPool(): StoredPool | null {
   }
 }
 
-/** Markeert `currentId` als gezien en geeft de volgende ongeziene film terug. */
+/** De volgende film uit de laatste spin die nog niet gezien is (en niet de huidige). */
 export function nextFromPool(currentId: number): MovieSummary | null {
   const pool = loadPool();
   if (!pool) return null;
-  const seen = new Set([...pool.seen, currentId]);
-  const next = pool.movies.find((m) => !seen.has(m.id)) ?? null;
-  if (next) seen.add(next.id);
-  savePool({ ...pool, seen: [...seen] });
-  return next;
+  const seen = new Set([...getSeen(), currentId]);
+  return pool.movies.find((m) => !seen.has(m.id)) ?? null;
 }
 
 const RESPIN_KEY = "wkwn:respin";

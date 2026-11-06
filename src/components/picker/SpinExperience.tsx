@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { FilmReel } from "@/components/reel/FilmReel";
 import { DECADES, getDecade, getGenre, type DecadeId, type GenreId } from "@/lib/constants";
 import { consumeRespin, loadPool, savePool } from "@/lib/pool";
+import { clearSeen, getSeen, useSeenCount } from "@/lib/seen";
 import { posterUrl } from "@/lib/tmdb/images";
 import type { MovieSummary } from "@/lib/tmdb/types";
 import { DecadeDial } from "./DecadeDial";
@@ -15,7 +16,7 @@ import { GenreSelector } from "./GenreSelector";
 
 type Phase =
   | { name: "pick" }
-  | { name: "spinning"; pool: MovieSummary[]; winnerId: number };
+  | { name: "spinning"; pool: MovieSummary[]; winnerId: number; exhausted: boolean };
 
 export function SpinExperience() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export function SpinExperience() {
   const [phase, setPhase] = useState<Phase>({ name: "pick" });
   const [error, setError] = useState<string | null>(null);
   const [loading, startLoading] = useTransition();
+  const seenCount = useSeenCount();
 
   const theme = getDecade(decadeId)?.theme ?? DECADES[0].theme;
 
@@ -32,7 +34,7 @@ export function SpinExperience() {
       setError(null);
       setDecadeId(decade);
       setGenreId(genre);
-      const result = await spin(decade, genre);
+      const result = await spin(decade, genre, getSeen());
       if (!result.ok) {
         setError(result.error);
         return;
@@ -43,8 +45,8 @@ export function SpinExperience() {
       router.prefetch(`/film/${result.winnerId}`);
       if (winner?.posterPath) new window.Image().src = posterUrl(winner.posterPath, "w780");
 
-      savePool({ decadeId: decade, genreId: genre, movies: result.pool, seen: [result.winnerId] });
-      setPhase({ name: "spinning", pool: result.pool, winnerId: result.winnerId });
+      savePool({ decadeId: decade, genreId: genre, movies: result.pool });
+      setPhase({ name: "spinning", pool: result.pool, winnerId: result.winnerId, exhausted: result.exhausted });
     });
   }
 
@@ -83,7 +85,9 @@ export function SpinExperience() {
         <p className="mt-2 text-muted">
           {phase.name === "pick"
             ? "Kies een decennium en een genre. De filmrol doet de rest."
-            : `De beste ${getGenre(genreId!)?.label.toLowerCase()} uit de jaren ${getDecade(decadeId)?.label}…`}
+            : phase.exhausted
+              ? "Je hebt alle topfilms in deze combinatie al gezien, dus dit kan een herhaling zijn."
+              : `De beste ${getGenre(genreId!)?.label.toLowerCase()} uit de jaren ${getDecade(decadeId)?.label}…`}
         </p>
       </header>
 
@@ -101,6 +105,14 @@ export function SpinExperience() {
             <Button onClick={onSpin} disabled={!genreId || loading} aria-busy={loading}>
               {loading ? "Filmrol laden…" : "Draai de filmrol"}
             </Button>
+            {seenCount > 0 && (
+              <p className="text-sm text-muted">
+                {seenCount === 1 ? "1 film" : `${seenCount} films`} al gezien, die slaan we over.{" "}
+                <button onClick={clearSeen} className="underline underline-offset-2 hover:text-fg">
+                  Wissen
+                </button>
+              </p>
+            )}
             {error && (
               <p role="alert" className="text-sm text-accent-2">
                 {error}

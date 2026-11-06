@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { TmdbImage } from "@/components/ui/TmdbImage";
 import { themeForYear } from "@/lib/theme";
 import type { MovieDetails } from "@/lib/tmdb/types";
+import { MarkSeen } from "./MarkSeen";
 import { PickActions } from "./PickActions";
 import { SwipeablePoster } from "./SwipeablePoster";
 
@@ -8,7 +10,19 @@ const formatRuntime = (min: number) => `${Math.floor(min / 60)}u ${min % 60}m`;
 
 export function MovieHero({ movie }: { movie: MovieDetails }) {
   return (
-    <main data-theme={themeForYear(movie.year)} className="theme-surface flex flex-1 items-center overflow-hidden">
+    <main data-theme={themeForYear(movie.year)} className="theme-surface flex flex-1 flex-col overflow-hidden">
+      <MarkSeen id={movie.id} />
+      <nav className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 pt-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-full border border-muted/30 px-4 py-2 text-sm text-muted transition-colors hover:border-accent hover:text-fg"
+        >
+          <span aria-hidden>←</span> Startscherm
+        </Link>
+        <Link href="/" className="font-display text-2xl tracking-wide text-fg/80 hover:text-fg">
+          Wat kijken we nu?
+        </Link>
+      </nav>
       {movie.backdropPath && (
         <div aria-hidden className="absolute inset-0 -z-10">
           <TmdbImage path={movie.backdropPath} kind="backdrop" alt="" fill sizes="100vw" className="scale-110 object-cover opacity-30 blur-2xl" />
@@ -16,7 +30,7 @@ export function MovieHero({ movie }: { movie: MovieDetails }) {
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-10 px-6 py-12 md:flex-row md:items-start">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-10 px-6 py-10 md:flex-row md:items-center">
         <SwipeablePoster id={movie.id} title={movie.title} posterPath={movie.posterPath} />
 
         <div className="flex flex-col gap-5 text-center md:text-left">

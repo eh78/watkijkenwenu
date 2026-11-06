@@ -31,6 +31,7 @@ src/
 └── lib/
     ├── constants.ts          # decennia, genres, selectie-instellingen
     ├── pool.ts               # laatste spin in sessionStorage (voor swipen)
+    ├── seen.ts               # al geziene films deze sessie (worden overgeslagen)
     ├── theme.ts              # jaartal → decennium-thema
     └── tmdb/                 # server-only client, gecachete queries, image-helpers, types
 ```
@@ -42,7 +43,11 @@ src/
    Te weinig resultaten? Dan valt hij terug op `vote_count.gte=100`.
 2. Top 100 = 5 pagina's van 20 films. Er wordt één willekeurige pagina opgehaald, en daaruit
    één winnaar. De andere posters vullen de filmrol en zijn "volgende" bij wegswipen.
-3. TMDB-responses worden een dag gecachet (`'use cache'` + `cacheLife('days')`).
+3. Films die je deze browsersessie al gezien hebt, worden overgeslagen (over alle genres heen).
+   Zit er op een pagina niets nieuws meer tussen, dan probeert hij de andere pagina's. Is alles
+   gezien, dan kiest hij toch een film en meldt dat het een herhaling kan zijn. Op het startscherm
+   kun je de lijst wissen.
+4. TMDB-responses worden een dag gecachet (`'use cache'` + `cacheLife('days')`).
    Het willekeurig kiezen gebeurt na de cache.
 
 De TMDB-token wordt alleen op de server gebruikt (`server-only`).
